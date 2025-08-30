@@ -1,166 +1,216 @@
 // ==========================
 // tests/test_euler.cpp
 // ==========================
-// Purpose:
-//   Small unit-style checks for Graph and Euler.
-//   We use simple `assert` statements; if all pass we print "OK".
-//   Each line has a comment so you can follow along.
+// This file defines unit tests for the Graph and Euler classes.
+// It uses the doctest framework so that we can run many small tests,
+// see detailed reports, and measure code coverage.
 // ==========================
 
-#include "graph/Graph.hpp"         // bring in the Graph class API
-#include "algo/Euler.hpp"          // bring in the Euler algorithm
-#include <cassert>                 // for assert()
-#include <iostream>                // for std::cout
-#include <string>                  // for std::string searches
+// Enable doctest main entry point (so this file produces a `main()`)
+#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
+#include "doctest.h"         // doctest framework header
 
-int main() {                       // test program entry point
+// Include project headers
+#include "graph/Graph.hpp"   // Graph class declaration
+#include "algo/Euler.hpp"    // Euler algorithm class declaration
 
-    { // ---------- Test 1: Undirected 4-cycle should have an Euler circuit ----------
-      // Build an undirected cycle on 4 vertices: 0-1-2-3-0 (all degrees even).
-        Graph g(4, Graph::Kind::Undirected);      // create graph with 4 vertices
-        g.addEdge(0,1,1);                          // add edge 0-1
-        g.addEdge(1,2,1);                          // add edge 1-2
-        g.addEdge(2,3,1);                          // add edge 2-3
-        g.addEdge(3,0,1);                          // add edge 3-0 (cycle closes)
-        Euler e;                                    // construct Euler solver
-        std::string s = e.run(g);                   // run Euler on the graph
-        assert(!s.empty());                         // ensure we got a non-empty message
-        assert(s.find("Euler circuit") != std::string::npos); // expect success phrase
-    }
+// Include for exception classes
+#include <stdexcept>         // std::invalid_argument, std::out_of_range
+#include <string>            // std::string
 
-    { // ---------- Test 2: Undirected with odd degree → no Euler circuit ----------
-      // Build a path 0-1-2 (vertex 1 has degree 2, but 0 and 2 have degree 1 → odd).
-        Graph g(3, Graph::Kind::Undirected);      // 3 vertices
-        g.addEdge(0,1,1);                          // edge 0-1
-        g.addEdge(1,2,1);                          // edge 1-2
-        Euler e;                                    // solver
-        std::string s = e.run(g);                   // run
-        assert(s.find("No Euler circuit") != std::string::npos); // should fail
-    }
-
-    { // ---------- Test 3: Directed 3-cycle should have a directed Euler circuit ----------
-      // Build 0->1->2->0 (each vertex has in=out=1, strongly connected).
-        Graph g(3, Graph::Kind::Directed);        // directed graph with 3 vertices
-        g.addEdge(0,1,1);                          // arc 0->1
-        g.addEdge(1,2,1);                          // arc 1->2
-        g.addEdge(2,0,1);                          // arc 2->0
-        Euler e;                                    // solver
-        std::string s = e.run(g);                   // run
-        assert(s.find("Euler circuit (directed)") != std::string::npos); // expect success
-    }
-
-    { // ---------- Test 4: Directed with in/out mismatch → no Euler circuit ----------
-      // Make 0->1, 1->2, 2->0, plus extra 0->2 (now out(0)=2, in(0)=1 → mismatch).
-        Graph g(3, Graph::Kind::Directed);        // directed on 3 vertices
-        g.addEdge(0,1,1);                          // 0->1
-        g.addEdge(1,2,1);                          // 1->2
-        g.addEdge(2,0,1);                          // 2->0
-        g.addEdge(0,2,1);                          // extra 0->2 causes imbalance
-        Euler e;                                    // solver
-        std::string s = e.run(g);                   // run
-        assert(s.find("in-degree != out-degree") != std::string::npos); // expect failure
-    }
-
-    { // ---------- Test 5: Directed with balanced degrees but not strongly connected ----------
-      // Two cycles disconnected: (0->1->0) and (2->3->2). in=out holds, but no strong connectivity among all.
-        Graph g(4, Graph::Kind::Directed);        // 4 vertices
-        g.addEdge(0,1,1);                          // first SCC: 0->1
-        g.addEdge(1,0,1);                          // first SCC: 1->0
-        g.addEdge(2,3,1);                          // second SCC: 2->3
-        g.addEdge(3,2,1);                          // second SCC: 3->2
-        Euler e;                                    // solver
-        std::string s = e.run(g);                   // run
-        assert(s.find("not strongly connected") != std::string::npos); // expect failure
-    }
-
-    { // ---------- Test 6: Graph::reversed on directed ----------
-      // Reverse 0->1 and 2->1; after reversed(), we must have 1->0 and 1->2.
-        Graph g(3, Graph::Kind::Directed);        // create directed graph
-        g.addEdge(0,1,5);                          // 0->1 with weight 5 (weight ignored here)
-        g.addEdge(2,1,7);                          // 2->1 with weight 7
-        Graph r = g.reversed();                    // build reversed graph
-        assert(r.hasArc(1,0));                     // check 1->0 exists
-        assert(r.hasArc(1,2));                     // check 1->2 exists
-        assert(!r.hasArc(0,1));                    // original direction should not exist in reversed
-    }
-
-    { // ---------- Test 7: Graph::removeEdge on undirected ----------
-      // Start with triangle 0-1-2-0, then remove edge 1-2 and verify counts/adjacency.
-        Graph g(3, Graph::Kind::Undirected);      // undirected graph
-        g.addEdge(0,1,1);                          // 0-1
-        g.addEdge(1,2,1);                          // 1-2
-        g.addEdge(2,0,1);                          // 2-0
-        bool removed = g.removeEdge(1,2);          // remove logical edge between 1 and 2
-        assert(removed);                            // should return true
-        assert(!g.hasArc(1,2));                    // 1->2 gone
-        assert(!g.hasArc(2,1));                    // 2->1 gone (undirected also removed reverse)
-    }
-
-    { // ---------- Test 8: Graph options (no self-loops, no multi-edges) ----------
-      // Try to insert self-loop and duplicate edges; expect either exception or dedup behavior.
-        Graph::Options opt;                        // create options struct
-        opt.allowSelfLoops = false;                // disallow self-loops
-        opt.allowMultiEdges = false;               // disallow duplicates
-        Graph g(3, Graph::Kind::Undirected, opt);  // construct with options
-        g.addEdge(0,1,1);                          // add first edge 0-1
-        g.addEdge(0,1,1);                          // duplicate should be ignored
-        assert(g.adj(0).size() == 1);              // only one neighbor entry on 0
-        // Self-loop should throw; wrap in a try/catch to verify behavior.
-        bool threw = false;                         // flag to record exception
-        try {
-            g.addEdge(2,2,1);                      // attempt self-loop
-        } catch (const std::invalid_argument&) {
-            threw = true;                          // expected path when self-loops disabled
-        }
-        assert(threw);                              // verify exception occurred
-    }
-
-    // ===== Extra coverage blocks you asked for =====
-
-    { // ---------- Extra Test A: Graph::label() ----------
-      // Create a small graph and call label() to cover the function.
-        Graph g(2, Graph::Kind::Undirected);       // 2 vertices, undirected
-        g.addEdge(0,1,1);                           // single edge
-        std::string L = g.label();                  // call label() to exercise Graph::label()
-        assert(!L.empty());                         // label should not be empty
-        assert(L.find("UndirectedGraph(") != std::string::npos); // should mention UndirectedGraph
-    }
-
-    { // ---------- Extra Test B: reversed() on UNDIRECTED ----------
-      // For undirected graphs, reversed() should copy adjacency as-is (covers the undirected branch).
-        Graph g(3, Graph::Kind::Undirected);       // undirected graph
-        g.addEdge(0,1,1);                           // 0-1
-        g.addEdge(1,2,1);                           // 1-2
-        Graph r = g.reversed();                     // call reversed() to hit the undirected branch
-        assert(r.hasArc(0,1));                      // 0-1 present
-        assert(r.hasArc(1,0));                      // 1-0 present (because undirected stores both arcs)
-        assert(r.hasArc(1,2));                      // 1-2 present
-        assert(r.hasArc(2,1));                      // 2-1 present
-    }
-
-    { // ---------- Extra Test C: removeEdge() -> false path ----------
-      // Try removing a non-existent edge to exercise the "changed == false" branch.
-        Graph g(3, Graph::Kind::Undirected);       // fresh undirected graph
-        g.addEdge(0,1,1);                           // only one edge exists
-        bool removed = g.removeEdge(1,2);           // attempt to remove 1-2 which does not exist
-        assert(!removed);                           // should return false
-        assert(g.hasArc(0,1));                      // 0-1 still present
-        assert(g.hasArc(1,0));                      // 1-0 still present (undirected reverse)
-    }
-
-    std::cout << "OK\n";                           // print success sentinel for the Makefile target
-    return 0;     
-    
-    { // ---------- Extra Test D: checkIndex() exception path ----------
-      // Force an out_of_range by accessing an invalid vertex index.
-        Graph g(2, Graph::Kind::Undirected);      // vertices: 0,1
-        bool threw = false;                        // track the exception
-        try {
-            (void)g.adj(2);                        // invalid index (>= n) -> should throw
-        } catch (const std::out_of_range&) {
-            threw = true;                          // expected
-        }
-        assert(threw);                             // verify exception occurred
-    }
-    // indicate success to the OS
+// ---------------------------
+// Test 1: Undirected 4-cycle should have an Euler circuit
+// ---------------------------
+TEST_CASE("Undirected 4-cycle has an Euler circuit") {
+    Graph g(4, Graph::Kind::Undirected);  // create graph with 4 vertices, undirected
+    g.addEdge(0,1);                       // add edge 0-1
+    g.addEdge(1,2);                       // add edge 1-2
+    g.addEdge(2,3);                       // add edge 2-3
+    g.addEdge(3,0);                       // add edge 3-0 (completes a cycle)
+    Euler e;                              // construct Euler solver
+    auto s = e.run(g);                    // run Euler algorithm
+    CHECK(!s.empty());                    // result string should not be empty
+    CHECK(s.find("Euler circuit") != std::string::npos); // must mention Euler circuit
 }
+
+// ---------------------------
+// Test 2: Undirected with odd-degree vertex → no Euler circuit
+// ---------------------------
+TEST_CASE("Undirected with odd-degree vertex → no Euler circuit") {
+    Graph g(3, Graph::Kind::Undirected);  // graph with 3 vertices
+    g.addEdge(0,1);                       // edge 0-1
+    g.addEdge(1,2);                       // edge 1-2
+    Euler e;                              // solver
+    auto s = e.run(g);                    // run
+    CHECK(s.find("No Euler circuit") != std::string::npos); // expect failure message
+}
+
+// ---------------------------
+// Test 3: Directed 3-cycle has an Euler circuit
+// ---------------------------
+TEST_CASE("Directed 3-cycle has a directed Euler circuit") {
+    Graph g(3, Graph::Kind::Directed);    // directed graph with 3 vertices
+    g.addEdge(0,1);                       // arc 0->1
+    g.addEdge(1,2);                       // arc 1->2
+    g.addEdge(2,0);                       // arc 2->0
+    Euler e;                              // solver
+    auto s = e.run(g);                    // run
+    CHECK(s.find("Euler circuit (directed)") != std::string::npos); // expect success
+}
+
+// ---------------------------
+// Test 4: Directed in/out mismatch → no Euler circuit
+// ---------------------------
+TEST_CASE("Directed in/out mismatch → no Euler circuit") {
+    Graph g(3, Graph::Kind::Directed);    // 3 vertices
+    g.addEdge(0,1);                       // arc 0->1
+    g.addEdge(1,2);                       // arc 1->2
+    g.addEdge(2,0);                       // arc 2->0
+    g.addEdge(0,2);                       // extra arc 0->2 (out-degree of 0 is now 2)
+    Euler e;                              // solver
+    auto s = e.run(g);                    // run
+    CHECK(s.find("in-degree != out-degree") != std::string::npos); // expect mismatch error
+}
+
+// ---------------------------
+// Test 5: Directed graph with two SCCs → not strongly connected
+// ---------------------------
+TEST_CASE("Directed balanced but not strongly connected → no Euler circuit") {
+    Graph g(4, Graph::Kind::Directed);    // 4 vertices
+    g.addEdge(0,1); g.addEdge(1,0);       // SCC 1: 0 <-> 1
+    g.addEdge(2,3); g.addEdge(3,2);       // SCC 2: 2 <-> 3
+    Euler e;                              // solver
+    auto s = e.run(g);                    // run
+    CHECK(s.find("not strongly connected") != std::string::npos); // expect failure
+}
+
+// ---------------------------
+// Test 6: Graph::reversed on directed graphs
+// ---------------------------
+TEST_CASE("Graph::reversed on directed") {
+    Graph g(3, Graph::Kind::Directed);    // directed graph
+    g.addEdge(0,1,5);                     // 0->1 with weight 5
+    g.addEdge(2,1,7);                     // 2->1 with weight 7
+    Graph r = g.reversed();               // reversed graph
+    CHECK(r.hasArc(1,0));                 // reversed contains 1->0
+    CHECK(r.hasArc(1,2));                 // reversed contains 1->2
+    CHECK_FALSE(r.hasArc(0,1));           // original direction 0->1 not present
+}
+
+// ---------------------------
+// Test 7: Graph::removeEdge on undirected
+// ---------------------------
+TEST_CASE("Graph::removeEdge on undirected removes both arcs") {
+    Graph g(3, Graph::Kind::Undirected);  // undirected triangle
+    g.addEdge(0,1); g.addEdge(1,2); g.addEdge(2,0);
+    CHECK(g.removeEdge(1,2));             // remove edge 1-2
+    CHECK_FALSE(g.hasArc(1,2));           // ensure arc 1->2 removed
+    CHECK_FALSE(g.hasArc(2,1));           // ensure reverse arc 2->1 removed too
+}
+
+// ---------------------------
+// Test 8: Graph options (no self-loops, no multi-edges)
+// ---------------------------
+TEST_CASE("Graph options: no self-loops, no multi-edges") {
+    Graph::Options opt;                   // options struct
+    opt.allowSelfLoops = false;           // disable self-loops
+    opt.allowMultiEdges = false;          // disable parallel edges
+    Graph g(3, Graph::Kind::Undirected, opt);
+    g.addEdge(0,1);                       // add 0-1
+    g.addEdge(0,1);                       // duplicate should be ignored
+    CHECK(g.adj(0).size() == 1);          // only one stored
+    CHECK_THROWS_AS(g.addEdge(2,2), std::invalid_argument); // self-loop throws
+}
+
+// ---------------------------
+// Test 9: Graph::label()
+// ---------------------------
+TEST_CASE("Graph::label() non-empty and mentions type") {
+    Graph g(2, Graph::Kind::Undirected);  // 2 vertices, undirected
+    g.addEdge(0,1);                       // add edge
+    auto L = g.label();                   // call label()
+    CHECK(!L.empty());                    // must not be empty
+    CHECK(L.find("UndirectedGraph(") != std::string::npos); // must mention type
+}
+
+// ---------------------------
+// Test 10: reversed() on undirected should be identical
+// ---------------------------
+TEST_CASE("reversed() on undirected copies adjacency") {
+    Graph g(3, Graph::Kind::Undirected);
+    g.addEdge(0,1); g.addEdge(1,2);
+    Graph r = g.reversed();               // reversed graph
+    CHECK(r.hasArc(0,1));                 // original edges still there
+    CHECK(r.hasArc(1,0));
+    CHECK(r.hasArc(1,2));
+    CHECK(r.hasArc(2,1));
+}
+
+// ---------------------------
+// Test 11: removeEdge non-existent → returns false
+// ---------------------------
+TEST_CASE("removeEdge() non-existent → returns false") {
+    Graph g(3, Graph::Kind::Undirected);
+    g.addEdge(0,1);                       // only edge
+    CHECK_FALSE(g.removeEdge(1,2));       // removing missing edge should fail
+    CHECK(g.hasArc(0,1));                 // 0-1 still present
+    CHECK(g.hasArc(1,0));                 // 1-0 still present
+}
+
+// ---------------------------
+// Test 12: adj() invalid index throws out_of_range
+// ---------------------------
+TEST_CASE("adj() out_of_range throws") {
+    Graph g(2, Graph::Kind::Undirected);  // vertices 0 and 1
+    CHECK_THROWS_AS((void)g.adj(2), std::out_of_range); // invalid index 2
+}
+
+// ---------------------------
+// Test 13: trivial undirected graph (no edges)
+// ---------------------------
+TEST_CASE("Trivial: undirected no-edges message") {
+    Graph g(3, Graph::Kind::Undirected);  // no edges
+    Euler e;
+    auto s = e.run(g);
+    CHECK(s.find("Graph has no edges") != std::string::npos);
+}
+
+// ---------------------------
+// Test 14: trivial directed graph (no edges)
+// ---------------------------
+TEST_CASE("Trivial: directed no-edges message") {
+    Graph g(3, Graph::Kind::Directed);    // no edges
+    Euler e;
+    auto s = e.run(g);
+    CHECK(s.find("Graph has no edges") != std::string::npos);
+}
+
+TEST_CASE("Undirected: even degrees but disconnected -> no Euler") {
+    Graph g(6, Graph::Kind::Undirected);
+    // two disjoint 3-cycles: 0-1-2-0 and 3-4-5-3 (all degrees = 2, but disconnected)
+    g.addEdge(0,1); g.addEdge(1,2); g.addEdge(2,0);
+    g.addEdge(3,4); g.addEdge(4,5); g.addEdge(5,3);
+    Euler e;
+    auto s = e.run(g);
+    CHECK(s.find("disconnected on non-isolated vertices") != std::string::npos);
+}
+
+// Self-loop is DISALLOWED by default -> should throw
+TEST_CASE("Undirected: adding a self-loop throws when disabled") {
+    Graph g(1, Graph::Kind::Undirected);          // default: allowSelfLoops = false
+    CHECK_THROWS_AS(g.addEdge(0,0), std::invalid_argument);
+}
+
+// Self-loop is ALLOWED via options -> Euler circuit should succeed
+TEST_CASE("Undirected: self-loop allowed yields a valid Euler circuit") {
+    Graph::Options opt;
+    opt.allowSelfLoops = true;                     // enable self-loops
+    opt.allowMultiEdges = false;
+    Graph g(1, Graph::Kind::Undirected, opt);
+    g.addEdge(0,0);                                // now OK
+    Euler e;
+    auto s = e.run(g);
+    CHECK(s.find("Euler circuit") != std::string::npos);
+}
+
+

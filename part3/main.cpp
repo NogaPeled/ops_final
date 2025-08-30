@@ -32,10 +32,6 @@ int main(int argc, char* argv[]) {                            // entry point
     }
 
     if (V<=0 || E<0 || SEED<0) usage(argv[0]);                // basic validation
-    if (!dir && E > V*(V-1)/2) {                              // max edges in simple undirected graph
-        std::cerr << "Too many edges for a simple undirected graph\n";
-        return 1;
-    }
 
     Graph g( static_cast<std::size_t>(V),
              dir ? Graph::Kind::Directed : Graph::Kind::Undirected,
