@@ -93,8 +93,6 @@ By default:
 * `memcheck` uses `-v 8 -e 12 -s 1` (undirected) and `-v 8 -e 20 -s 1 --directed`
 * `callgrind` and `gprof` use `-v 4000 -e 6000 -s 1` for a more meaningful profile
 
-If your grader wants different sizes, edit those arguments directly in the `memcheck`, `callgrind`, and `gprof` rules inside `part4/Makefile`.
-
 ---
 
 ## Paths note (important if you move the project)
@@ -130,12 +128,3 @@ This **part4/Makefile** points to your root project using **absolute paths** (e.
   It’s included with Valgrind. Reinstall: `sudo apt install valgrind`
 
 ---
-
-## What to hand in (typical Part 4 deliverables)
-
-* Screenshot or link to **coverage\_html/index.html** showing overall %
-* **Memcheck** logs: `artifacts/memcheck_undirected.txt`, `artifacts/memcheck_directed.txt`
-* **Callgrind**: `artifacts/callgrind_annotate.txt` (and the raw `callgrind.out.*` if required)
-* **gprof**: `artifacts/gprof.txt`
-
-```

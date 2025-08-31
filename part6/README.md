@@ -145,12 +145,4 @@ You can also call the client directly with your own arguments.
 
 ---
 
-## Extending (optional ideas)
-
-* Add a `DIRECTED` mode and reuse the directed Euler checker.
-* Support JSON for the request/response payload.
-* Add logging to a file in `part6/artifacts/`.
-
----
-
 ```

@@ -111,13 +111,6 @@ ALG <MST|SCC|MAXFLOW|HAMILTON> MANUAL <V> : u-v u-v ... [--directed]
 * For `MANUAL`, edges are separated by spaces.
 * Add `--directed` to build a directed graph; otherwise undirected.
 
-## Troubleshooting
-
-* **“Unknown. Use:”** — You probably sent `ALGO` instead of `ALG`,
-  or the command is malformed. Use `ALG` exactly.
-* **Server not responding** — Make sure it’s running and listening
-  on `127.0.0.1:5555` (see server output).
-* **MST errors** — MST is only defined for **undirected** graphs.
 
 ## Clean
 

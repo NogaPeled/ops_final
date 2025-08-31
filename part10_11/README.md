@@ -116,8 +116,6 @@ make clean
 
 ---
 
-## What “counts” toward the requirements
-
 * **10. Valgrind analysis**
   `make reports` produces:
 
@@ -132,8 +130,6 @@ make clean
   * `src/` implementation files
   * your headers (inline code) if executed
   * both test binaries
-
-Include screenshots or the generated HTML folder in your submission if needed.
 
 ---
 
