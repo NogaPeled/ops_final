@@ -1,4 +1,4 @@
-# ====== Compiler ======
+# ====== Compiler & flags ======
 CXX  := g++
 STD  := -std=c++17
 WARN := -Wall -Wextra -Wpedantic
@@ -11,38 +11,44 @@ PRJ := $(abspath $(CURDIR)/..)
 # ====== Includes ======
 INC := -I"$(PRJ)/include"
 
-# ====== Sources ======
-# Change APP_SRC if your Part-3 file has a different name.
-APP_SRC := part3_random.cpp
+# ====== Binary & dirs ======
+BIN_DIR := bin
+APP     := $(BIN_DIR)/part3_random
 
+# ====== Sources ======
+# Core project sources (Graph + Euler)
 CORE_SRCS := \
   $(PRJ)/src/graph/Graph.cpp \
   $(PRJ)/src/algo/Euler.cpp
 
-# ====== Binaries & dirs ======
-BIN_DIR := bin
-APP_BIN := $(BIN_DIR)/part3_random
+# Your Part 3 program lives here:
+APP_SRC := main.cpp
 
-.PHONY: all clean run run-directed
+# ====== Phony targets ======
+.PHONY: all run run-directed clean
 
-all: $(APP_BIN)
+# ====== Build ======
+all: $(APP)
 
 $(BIN_DIR):
 	mkdir -p "$@"
 
-$(APP_BIN): $(BIN_DIR) $(APP_SRC) $(CORE_SRCS)
-	$(CXX) $(STD) $(WARN) $(DBG) $(OPT) $(INC) $(APP_SRC) $(CORE_SRCS) -o "$@"
+$(APP): $(BIN_DIR) $(CORE_SRCS) $(APP_SRC)
+	$(CXX) $(STD) $(WARN) $(DBG) $(OPT) $(INC) \
+	  $(CORE_SRCS) $(APP_SRC) -o "$@"
 
-# ---- Convenience runners (default values you can override) ----
+# ====== Run helpers ======
+# Defaults (override on make line: V=8 E=12 SEED=7)
 V ?= 6
 E ?= 7
 SEED ?= 1
 
-run: $(APP_BIN)
-	./$(APP_BIN) -v $(V) -e $(E) -s $(SEED)
+run: $(APP)
+	./$(APP) -v $(V) -e $(E) -s $(SEED)
 
-run-directed: $(APP_BIN)
-	./$(APP_BIN) -v $(V) -e $(E) -s $(SEED) --directed
+run-directed: $(APP)
+	./$(APP) -v $(V) -e $(E) -s $(SEED) --directed
 
+# ====== Clean ======
 clean:
 	rm -rf "$(BIN_DIR)"

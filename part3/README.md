@@ -1,111 +1,76 @@
 
----
+# Part 3 — Random Graph + Euler (CLI)
 
-### `part3/README-Part3.md`
+This part builds a small CLI app that:
+- parses -v <V> -e <E> -s <SEED> [--directed]
+- generates a random graph (undirected by default)
+- runs the *Euler circuit* algorithm and prints the result
 
-```markdown
-# Part 3 — Random Graph + Euler (undirected or directed)
-
-This program builds a random graph and runs the Euler algorithm on it.  
-It supports both **undirected** and **directed** graphs.
-
-## CLI
-
-```
-
-./bin/part3 -v <vertices> -e <edges> -s <seed> \[--directed]
-
-````
-
-- `-v <vertices>`: number of vertices (1..N)
-- `-e <edges>`: number of edges (undirected) or arcs (directed)
-- `-s <seed>`: seed for the PRNG (reproducible runs)
-- `--directed`: build a directed graph instead of undirected
-
-The program prints a one-line summary of the graph and either:
-- an Euler circuit in vertex order, or
-- a short reason why an Euler circuit doesn’t exist (e.g., *odd degree*, *in/out mismatch*, *not strongly connected*, or *no edges*).
-
-## Build & run (from this folder)
-
-```bash
-cd part3
-make          # builds ./bin/part3
-./bin/part3 -v 8 -e 12 -s 1
-./bin/part3 -v 8 -e 20 -s 1 --directed
-````
-
-You can also use helper targets:
-
-```bash
-make run            # undirected sample: -v 8 -e 12 -s 1
-make run-directed   # directed sample:   -v 8 -e 20 -s 1 --directed
-```
-
-> This Makefile compiles the core sources from the **project root** using a
-> relocatable path (`ROOT := $(abspath ..)`), so you can move the repo and it
-> still works.
-
-## Notes / Tips
-
-* **Undirected Euler** requires all vertex degrees to be even and the graph
-  connected on the non-isolated vertices.
-* **Directed Euler** requires for every vertex `in_degree == out_degree` and strong connectivity on the non-isolated vertices.
-* Random graphs may or may not satisfy these—it’s normal to sometimes get
-  “No Euler circuit…”. Re-run with a different `-s`, or adjust `-e`.
-* The generator avoids self-loops and duplicate edges/arcs based on your Graph
-  options; the Euler algorithm works for both graph kinds.
-
-## Troubleshooting
-
-* If you get “No Euler circuit…” it’s usually because the random graph didn’t
-  meet the degree/connectivity requirements; increase `-e` or try a new `-s`.
-* If compile paths break after moving the repo, this folder’s `Makefile`
-  uses `ROOT := $(abspath ..)`. That should auto-fix paths. If not, open the
-  Makefile and confirm `ROOT` points one directory up to your project root.
-
-````
+Your program file is *main.cpp*.
 
 ---
 
-### `part3/Makefile`
+## Project layout
 
-```make
-# -------- Part 3 local Makefile (relocatable) --------
+os_project/ include/ graph/Graph.hpp algo/Euler.hpp src/ graph/Graph.cpp algo/Euler.cpp part3/ main.cpp Makefile README.md
 
-CXX   := g++
-STD   := -std=c++17
-WARN  := -Wall -Wextra -Wpedantic
-OPT   := -O2 -g
+---
 
-# Absolute path to project root (one level up from part3/)
-ROOT  := $(abspath ..)
+## Build
 
-INCS  := -I$(ROOT)/include
-SRC   := $(ROOT)/src/graph/Graph.cpp \
-         $(ROOT)/src/algo/Euler.cpp \
-         main.cpp
+From the part3/ directory:
 
-BIN       := bin
-RUN_BIN   := $(BIN)/part3
+```bash
+make
 
-.PHONY: all run run-directed clean
+This produces: bin/part3_random
 
-all: $(RUN_BIN)
+Clean:
 
-$(BIN):
-	mkdir -p "$@"
+make clean
 
-$(RUN_BIN): $(BIN) $(SRC)
-	$(CXX) $(STD) $(WARN) $(OPT) $(INCS) $(SRC) -o "$@"
 
-# Quick demos
-run: $(RUN_BIN)
-	"$(RUN_BIN)" -v 8 -e 12 -s 1
+---
 
-run-directed: $(RUN_BIN)
-	"$(RUN_BIN)" -v 8 -e 20 -s 1 --directed
+Run
 
-clean:
-	rm -rf "$(BIN)"
-````
+Direct execution:
+
+./bin/part3_random -v 6 -e 7 -s 1
+./bin/part3_random -v 8 -e 10 -s 42 --directed
+
+Makefile helpers (default V=6 E=7 SEED=1):
+
+# Undirected (defaults)
+make run
+
+# Override defaults
+make run V=10 E=12 SEED=123
+
+# Directed
+make run-directed V=8 E=10 SEED=42
+
+Example output
+
+Generated UndirectedGraph(6V,7E)
+Euler circuit: 0 -> 3 -> 1 -> 2 -> 0
+
+If no Euler circuit exists, you’ll see a message indicating that.
+
+
+---
+
+Notes & limits
+
+Vertices are labeled 0..V-1.
+
+No self-loops or parallel edges are added.
+
+Keep E within simple-graph limits:
+
+Undirected: E ≤ V*(V-1)/2
+
+Directed:   E ≤ V*(V-1)
+
+
+Weights/capacities are generated as 1 for Euler.
